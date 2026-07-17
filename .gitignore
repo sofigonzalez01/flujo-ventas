@@ -1,0 +1,8 @@
+﻿uploads/
+flujo_ventas
+flujo_ventas.db-shm
+flujo_ventas.db-wal
+.env
+__pycache__/
+*.pyc
+flujo_ventas.db

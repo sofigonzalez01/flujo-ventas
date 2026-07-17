@@ -1,0 +1,162 @@
+Flujo Ventas — Espacio Electrónica
+==================================
+Guía de instalación y uso
+
+¿Qué es esto?
+--------------
+Un sistema web que corre en UNA sola computadora de la oficina (el servidor).
+Todos los demás (Ventas, Facturación, Depósito, Flex, Mostrador) acceden desde
+su navegador escribiendo una dirección, sin instalar nada extra.
+
+Sigue el pedido de facturación desde que Ventas lo solicita hasta que se
+entrega o se retira, con prioridades, estados por color e historial completo
+de quién hizo cada paso.
+
+
+INSTALACIÓN (solo la primera vez)
+----------------------------------
+
+Paso 1 — Instalar Python
+1. Abrí el navegador y entrá a https://www.python.org/downloads/
+2. Descargá la versión más reciente (botón amarillo grande)
+3. Ejecutá el instalador
+   IMPORTANTE: tildá "Add Python to PATH" antes de hacer clic en Install
+
+Paso 2 — Copiar los archivos
+Copiá la carpeta "flujo_ventas" completa a un lugar fijo del servidor, por ejemplo:
+   C:\flujo_ventas\
+
+Paso 3 — Instalar dependencias
+1. Abrí la consola de Windows (Windows + R, escribí cmd, Enter)
+2. Navegá a la carpeta:
+   cd C:\flujo_ventas
+3. Instalá Flask:
+   pip install -r requirements.txt
+
+Paso 4 — Configurar el usuario administrador inicial
+Abrí el archivo ".env" con el Notepad y revisá/cambiá estas líneas:
+   ADMIN_USER=admin
+   ADMIN_PASS=admin123
+Se recomienda cambiar la contraseña por una propia ANTES de arrancar el
+sistema por primera vez. Una vez que el sistema arrancó una vez, estos
+valores solo se usan si no existe ningún usuario administrador todavía.
+
+Paso 5 — Iniciar el servidor
+1. En la misma consola:
+   python app.py
+2. Va a aparecer un mensaje con la dirección IP, por ejemplo:
+     Abrí en esta computadora:  http://localhost:5050
+     Otros en la red acceden:   http://192.168.1.105:5050
+
+Paso 6 — Primer ingreso
+Entrá con el usuario administrador (ADMIN_USER / ADMIN_PASS del paso 4) y
+creá desde el panel "Usuarios" una cuenta para cada persona de Ventas,
+Facturación, Depósito, Flex y Mostrador, asignándole el rol correspondiente.
+
+
+USO DIARIO
+----------
+Cada vez que quieran usar el sistema, en la computadora que hace de servidor:
+1. Abrí la consola (Windows + R -> cmd)
+2. cd C:\flujo_ventas
+3. python app.py
+4. Dejá esa ventana abierta mientras lo usan. Para apagar: Ctrl + C
+
+Para no abrir la consola cada vez, se puede usar el archivo "iniciar.bat"
+incluido en la carpeta: doble clic y listo.
+
+El resto de las personas entra desde su notebook, en el navegador, escribiendo
+la dirección de red que se mostró al iniciar el servidor (ej. http://192.168.1.105:5050).
+
+
+ROLES DEL SISTEMA
+------------------
+- Ventas: crea las solicitudes de facturación, define envío/retiro luego de facturado,
+  y puede solicitar una nota de crédito si el cliente ya no quiere la factura.
+- Facturación: emite la factura, confirma el pago (cuando corresponde), registra la
+  cobranza, y emite (sube) la nota de crédito cuando Ventas la solicitó.
+- Depósito: prepara y deriva el pedido a Flex (envío) o Mostrador (retiro).
+- Flex: planifica la fecha de entrega y marca el pedido como entregado.
+- Mostrador: marca el pedido como retirado cuando el cliente lo recoge.
+- Administración: gestiona usuarios, ve las métricas por vendedor, y puede
+  realizar cualquier acción.
+
+
+NOTA DE CRÉDITO
+----------------
+Si una empresa ya no quiere una factura que se le envió (por ejemplo, devolvió
+el producto), desde el detalle del pedido:
+1. Ventas hace clic en "Solicitar nota de crédito" e indica el motivo.
+2. Facturación ve la solicitud pendiente y sube el PDF de la nota de crédito
+   con "Emitir nota de crédito".
+La factura original nunca se borra ni se reemplaza: la nota de crédito queda
+guardada aparte, y ambos documentos siguen disponibles en el pedido.
+
+
+MÉTRICAS POR VENDEDOR
+-----------------------
+Desde el botón "Métricas" (solo para Administración) se puede ver, por cada
+vendedor: cuántas solicitudes creó, cuántas se facturaron, cuántas se cerraron
+(entregadas o retiradas), cuántas tuvieron una nota de crédito, y el desglose
+por prioridad. Se puede filtrar por rango de fechas. El monto total solo
+incluye las solicitudes de facturación manual (las de "pedido ya cargado" no
+tienen un monto capturado en este sistema).
+
+
+SEGURIDAD
+----------
+- Después de 5 intentos fallidos de inicio de sesión con el mismo usuario, el
+  sistema bloquea ese usuario por 15 minutos (protección contra adivinar
+  contraseñas). Es normal si a alguien le pasa por escribir mal la contraseña
+  varias veces seguidas — solo hay que esperar.
+- Las contraseñas nuevas deben tener al menos 8 caracteres.
+
+
+BACKUP DE LOS DATOS
+--------------------
+Todos los datos se guardan en:
+- flujo_ventas.db          (pedidos, usuarios, historial)
+- uploads\comprobantes\    (comprobantes de pago adjuntados)
+- uploads\facturas\        (PDFs de facturas emitidas)
+
+Para hacer una copia de seguridad (se puede hacer con el sistema corriendo,
+no hace falta apagarlo):
+   doble clic en "backup.bat"
+Esto crea una carpeta nueva dentro de "backups\" con fecha y hora, con una
+copia completa de la base de datos y los archivos adjuntos.
+
+Se recomienda hacerlo todos los días al finalizar la jornada, y guardar
+copia de la carpeta "backups\" fuera de esta computadora cada tanto
+(pendrive, Dropbox, etc.) para estar protegidos ante una falla de disco.
+
+RESTAURAR UNA COPIA DE SEGURIDAD
+----------------------------------
+1. Detené el servidor (Ctrl+C en la ventana donde corre "python app.py").
+2. Abrí la consola, navegá a la carpeta e ejecutá:
+   restore.bat NOMBRE_DE_LA_CARPETA
+   (el nombre de carpeta es la fecha/hora, ej: 20260713_171905 — podés ver
+   los disponibles ejecutando "restore.bat" sin nada más).
+3. Escribí SI cuando lo pida para confirmar.
+4. Iniciá el servidor de nuevo (python app.py o iniciar.bat).
+
+Esto reemplaza los datos actuales por los del backup elegido. Los cambios
+hechos después de esa copia se pierden, por eso conviene backupear seguido.
+
+
+PROBLEMAS FRECUENTES
+----------------------
+"python no se reconoce como comando"
+-> Python no quedó en el PATH. Desinstalá y volvé a instalar tildando la
+   opción correspondiente.
+
+"Otros en la red no pueden acceder"
+-> Verificá que el firewall de Windows no esté bloqueando el puerto 5050.
+   Panel de control -> Firewall de Windows Defender -> Permitir una
+   aplicación -> Python.
+
+"La IP cambió"
+-> Es normal si el router asigna IPs dinámicas. Para evitarlo, configurá una
+   IP estática en la computadora que hace de servidor (consultá con
+   alguien de sistemas).
+
+¿Dudas? Consultá con quien configuró el sistema.

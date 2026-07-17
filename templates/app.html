@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flujo Ventas — Espacio Electrónica</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    color-scheme: light;
+    --gris-bg: #f4f5f7; --gris-card: #fff;
+    --borde: #e2e5ea; --borde-hover: #c5ccd6;
+    --texto: #1a1d23; --texto-sec: #5a6270; --texto-muted: #9aa3af;
+    --radio: 10px;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--gris-bg); color: var(--texto); min-height: 100vh; font-size: 14px; }
+
+  #app { display: flex; flex-direction: column; min-height: 100vh; }
+  header { color: #fff; padding: 10px 24px; min-height: 56px;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap; position: sticky; top: 0; z-index: 100;
+    transition: background .2s; }
+  header .logo { font-size: 15px; font-weight: 700; white-space: nowrap; }
+  header .logo span { opacity: .7; font-weight: 400; }
+  header .spacer { flex: 1; }
+  header .user-chip { font-size: 12px; background: rgba(255,255,255,.15); padding: 5px 12px;
+    border-radius: 20px; white-space: nowrap; }
+  main { flex: 1; padding: 22px; max-width: 1180px; margin: 0 auto; width: 100%; }
+
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; height: 34px;
+    border-radius: var(--radio); border: 1px solid var(--borde); background: var(--gris-card);
+    color: var(--texto); font-size: 13px; cursor: pointer; font-family: inherit; white-space: nowrap;
+    transition: background .12s, border-color .12s; }
+  .btn:hover { background: var(--gris-bg); border-color: var(--borde-hover); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-primary { background: #1F3864; color: #fff; border-color: #1F3864; }
+  .btn-primary:hover { background: #2E5090; }
+  .btn-outline-white { background: transparent; color: #fff; border-color: rgba(255,255,255,.5); }
+  .btn-outline-white:hover { background: rgba(255,255,255,.12); }
+  .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
+
+  input, select, textarea {
+    width: 100%; padding: 0 10px; height: 34px; border: 1px solid var(--borde);
+    border-radius: var(--radio); font-family: inherit; font-size: 13px; color: var(--texto);
+    background: var(--gris-card); outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: #1F3864; }
+  textarea { height: auto; padding: 8px 10px; resize: vertical; }
+  label { display: block; font-size: 11px; color: var(--texto-sec); font-weight: 600; margin-bottom: 5px; }
+  .field { margin-bottom: 14px; }
+
+  .card { background: var(--gris-card); border: 1px solid var(--borde); border-radius: 12px; }
+  .toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .toolbar select, .toolbar input { width: auto; flex: 1 1 auto; min-width: 140px; }
+  .toolbar .grow { flex: 2 1 auto; min-width: 160px; }
+
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px;
+    border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .ped-list { display: flex; flex-direction: column; gap: 8px; }
+  .ped-row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; cursor: pointer; }
+  .ped-row:hover { border-color: var(--borde-hover); }
+  .ped-main { flex: 1; min-width: 0; }
+  .ped-titulo { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+  .ped-meta { font-size: 12px; color: var(--texto-sec); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .chip { background: var(--gris-bg); border: 1px solid var(--borde); border-radius: 6px;
+    padding: 2px 8px; font-size: 11px; color: var(--texto-sec); }
+  .ped-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+  .empty { text-align: center; padding: 60px 0; color: var(--texto-muted); }
+  .count { font-size: 12px; color: var(--texto-muted); text-align: right; margin-top: 10px; }
+
+  #vista-detalle, #vista-form, #vista-usuarios, #vista-metricas { display: none; }
+  .detalle-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+  .breadcrumb { font-size: 15px; font-weight: 700; flex: 1; }
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 14px; }
+  .seccion { padding: 16px; }
+  .seccion h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--texto-muted);
+    margin-bottom: 12px; font-weight: 700; }
+  .campo-row { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0;
+    border-bottom: 1px solid var(--borde); font-size: 13px; }
+  .campo-row:last-child { border-bottom: none; }
+  .campo-row span:first-child { color: var(--texto-muted); font-size: 12px; }
+  .campo-row a { color: #1F3864; font-weight: 600; text-decoration: none; }
+
+  .accion-box { padding: 16px; border: 1px solid var(--borde); border-radius: 12px; margin-bottom: 14px;
+    background: #fbfbfc; }
+  .accion-box h3 { font-size: 13px; margin-bottom: 12px; font-weight: 700; }
+
+  .timeline { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .timeline li { font-size: 12.5px; padding-left: 14px; border-left: 2px solid var(--borde); padding-bottom: 2px; }
+  .timeline .t-tipo { font-weight: 700; }
+  .timeline .t-meta { color: var(--texto-muted); font-size: 11px; }
+
+  .radio-group { display: flex; gap: 10px; }
+  .radio-opt { flex: 1; border: 1px solid var(--borde); border-radius: 10px; padding: 12px; cursor: pointer;
+    font-size: 13px; }
+  .radio-opt.selected { border-color: #1F3864; background: #eef2fa; font-weight: 600; }
+
+  #toast { position: fixed; bottom: 24px; right: 24px; background: #1a1d23; color: #fff;
+    padding: 10px 18px; border-radius: var(--radio); font-size: 13px; display: none; z-index: 999;
+    box-shadow: 0 4px 16px rgba(0,0,0,.2); max-width: 360px; }
+
+  table.usr { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.usr th, table.usr td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--borde); }
+  table.usr th { font-size: 11px; text-transform: uppercase; color: var(--texto-muted); }
+
+  @media (max-width: 640px) {
+    main { padding: 14px; }
+    header { padding: 10px 14px; gap: 8px; }
+    header .logo span { display: none; }
+    .toolbar { flex-direction: column; align-items: stretch; }
+    .toolbar select, .toolbar input, .toolbar .grow { flex: none; width: 100%; }
+    .ped-row { flex-direction: column; align-items: flex-start; }
+    .ped-badges { flex-direction: row; align-items: center; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="header">
+    <div class="logo">Flujo Ventas <span>/ Espacio Electrónica</span></div>
+    <div class="spacer"></div>
+    <button class="btn btn-sm btn-outline-white" id="btn-metricas" style="display:none" onclick="abrirMetricas()">Métricas</button>
+    <button class="btn btn-sm btn-outline-white" id="btn-usuarios" style="display:none" onclick="abrirUsuarios()">Usuarios</button>
+    <button class="btn btn-sm btn-outline-white" onclick="irLista()">Pedidos</button>
+    <span class="user-chip" id="user-chip">—</span>
+    <button class="btn btn-sm btn-outline-white" onclick="logout()">Salir</button>
+  </header>
+
+  <main>
+    <!-- LISTA -->
+    <div id="vista-lista">
+      <div class="toolbar">
+        <input type="search" class="grow" id="buscador" placeholder="Buscar por cliente, razón social o nº de pedido…" oninput="cargarPedidos()">
+        <select id="f-estado" onchange="cargarPedidos()"><option value="">Todos los estados</option></select>
+        <select id="f-prioridad" onchange="cargarPedidos()">
+          <option value="">Todas las prioridades</option>
+          <option>Urgente</option><option>Alta</option><option>Normal</option><option>Baja</option>
+        </select>
+        <select id="f-envio" onchange="cargarPedidos()">
+          <option value="">Envío y retiro</option>
+          <option value="1">Con envío</option>
+          <option value="0">Retiro en local</option>
+        </select>
+        <select id="f-sort" onchange="cargarPedidos()">
+          <option value="recientes">Más recientes</option>
+          <option value="prioridad">Por prioridad</option>
+        </select>
+        <button class="btn btn-primary" id="btn-nuevo" style="display:none" onclick="abrirForm()">+ Nueva solicitud</button>
+      </div>
+      <div class="ped-list" id="ped-list"></div>
+      <div class="count" id="count-text"></div>
+    </div>
+
+    <!-- DETALLE -->
+    <div id="vista-detalle"></div>
+
+    <!-- FORM NUEVO PEDIDO -->
+    <div id="vista-form"></div>
+
+    <!-- USUARIOS -->
+    <div id="vista-usuarios"></div>
+
+    <!-- METRICAS -->
+    <div id="vista-metricas"></div>
+  </main>
+</div>
+<div id="toast"></div>
+
+<script>
+let ME = null;
+let META = null;
+let CSRF_TOKEN = null;
+let pedidos = [];
+let detalleActual = null;
+
+// Colores de marca Espacio Electrónica (azul del logo) + paleta categórica armonizada por sector
+const ROL_COLOR = {
+  ventas: "#1F3864", facturacion: "#7c5cbf", deposito: "#e08a3c",
+  flex: "#0f9aa8", mostrador: "#3f9142", admin: "#33363d",
+};
+// Prioridad: lógica de semáforo, para identificar urgencia de un vistazo
+const PRIORIDAD_COLOR = {
+  Baja: "#64748b", Normal: "#3b6dc4", Alta: "#d97706", Urgente: "#dc2626",
+};
+const PRIORIDAD_BG = {
+  Baja: "#eef1f5", Normal: "#eaf1fc", Alta: "#fef3e2", Urgente: "#fde8e8",
+};
+// Estado: progresión de un solo espectro (gris → azul → verde) para que se "lea" el avance del pedido
+const ESTADO_COLOR = {
+  A_FACTURAR: ["#57606f", "#f1f3f6"],
+  FACTURADO: ["#2563eb", "#eaf1fd"],
+  EN_PREPARACION: ["#6d4fc7", "#f0ecfb"],
+  EN_FLEX: ["#0f9aa8", "#e6f6f7"],
+  PROGRAMADO: ["#0d9488", "#e4f6f4"],
+  ENTREGADO: ["#15803d", "#e8f5ec"],
+  LISTO_MOSTRADOR: ["#0f9aa8", "#e6f6f7"],
+  RETIRADO: ["#15803d", "#e8f5ec"],
+};
+const ESTADO_SECTOR = {
+  A_FACTURAR: "facturacion", FACTURADO: "ventas", EN_PREPARACION: "deposito",
+  EN_FLEX: "flex", PROGRAMADO: "flex", ENTREGADO: null,
+  LISTO_MOSTRADOR: "mostrador", RETIRADO: null,
+};
+
+function esc(str) {
+  return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.style.display = "block";
+  setTimeout(() => t.style.display = "none", 2600);
+}
+function show(id) {
+  ["vista-lista", "vista-detalle", "vista-form", "vista-usuarios", "vista-metricas"].forEach(v =>
+    document.getElementById(v).style.display = v === id ? "block" : "none");
+}
+function fechaCorta(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso.replace(" ", "T") + "Z");
+  if (isNaN(d)) return iso;
+  return d.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+async function api(url, opts = {}) {
+  const method = (opts.method || "GET").toUpperCase();
+  if (method !== "GET") {
+    opts.headers = { ...(opts.headers || {}), "X-CSRF-Token": CSRF_TOKEN || "" };
+  }
+  const r = await fetch(url, opts);
+  if (r.status === 401) { window.location = "/login"; throw new Error("No autenticado"); }
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || "Error inesperado");
+  return data;
+}
+
+async function init() {
+  try {
+    ME = await api("/api/me");
+    META = await api("/api/meta");
+  } catch (e) { window.location = "/login"; return; }
+
+  CSRF_TOKEN = ME.csrf_token;
+  document.getElementById("header").style.background = ROL_COLOR[ME.rol] || "#1F3864";
+  document.getElementById("user-chip").textContent = `${ME.nombre} · ${ME.rol_label}`;
+  if (ME.rol === "ventas" || ME.rol === "admin") document.getElementById("btn-nuevo").style.display = "";
+  if (ME.rol === "admin") document.getElementById("btn-usuarios").style.display = "";
+  if (ME.rol === "admin") document.getElementById("btn-metricas").style.display = "";
+
+  const selEstado = document.getElementById("f-estado");
+  META.estados.forEach(es => {
+    const opt = document.createElement("option");
+    opt.value = es; opt.textContent = META.estado_label[es];
+    selEstado.appendChild(opt);
+  });
+
+  irLista();
+}
+
+async function logout() {
+  await api("/api/logout", { method: "POST" });
+  window.location = "/login";
+}
+
+function badgePrioridad(p) {
+  return `<span class="badge" style="color:${PRIORIDAD_COLOR[p]};background:${PRIORIDAD_BG[p]}">
+    <span class="dot" style="background:${PRIORIDAD_COLOR[p]}"></span>${p}</span>`;
+}
+function badgeEstado(estado) {
+  const [color, bg] = ESTADO_COLOR[estado] || ["#333", "#eee"];
+  const label = META.estado_label[estado] || estado;
+  return `<span class="badge" style="color:${color};background:${bg}">${label}</span>`;
+}
+function badgeNotaCredito(estado) {
+  if (!estado) return "";
+  // Rosa/magenta: una familia de color que no se usa en sector, estado ni prioridad,
+  // para que una nota de crédito se distinga de inmediato del resto de los badges.
+  const color = estado === "EMITIDA" ? "#9d174d" : "#be185d";
+  const bg = estado === "EMITIDA" ? "#fbcfe8" : "#fce7f3";
+  const label = META.nota_credito_label[estado] || estado;
+  return `<span class="badge" style="color:${color};background:${bg}">⚠ ${label}</span>`;
+}
+
+// ---------- LISTA ----------
+
+function irLista() { show("vista-lista"); cargarPedidos(); }
+
+async function cargarPedidos() {
+  const params = new URLSearchParams({
+    q: document.getElementById("buscador").value,
+    estado: document.getElementById("f-estado").value,
+    prioridad: document.getElementById("f-prioridad").value,
+    envio: document.getElementById("f-envio").value,
+    sort: document.getElementById("f-sort").value,
+  });
+  try {
+    pedidos = await api("/api/pedidos?" + params.toString());
+  } catch (e) {
+    toast(e.message); return;
+  }
+  renderLista();
+}
+
+function renderLista() {
+  const list = document.getElementById("ped-list");
+  const count = document.getElementById("count-text");
+  if (!pedidos.length) {
+    list.innerHTML = `<div class="empty">No hay solicitudes que coincidan con los filtros.</div>`;
+    count.textContent = "";
+    return;
+  }
+  list.innerHTML = pedidos.map(p => `
+    <div class="card ped-row" onclick="abrirDetalle(${p.id})">
+      <div class="ped-main">
+        <div class="ped-titulo">#${p.id} — ${esc(p.razon_social)} <span style="color:var(--texto-muted);font-weight:400">(cliente ${esc(p.nro_cliente)})</span></div>
+        <div class="ped-meta">
+          <span class="chip">${p.modalidad_facturacion === "cargado" ? "Pedido ya cargado" : "Facturación manual"}</span>
+          ${p.envio === 1 ? '<span class="chip">📦 Con envío</span>' : p.envio === 0 ? '<span class="chip">🏬 Retiro en local</span>' : ""}
+          <span>${fechaCorta(p.created_at)}</span>
+          ${p.sector_actual ? `<span>Pendiente en: <b>${META.rol_label[p.sector_actual]}</b></span>` : ""}
+        </div>
+      </div>
+      <div class="ped-badges">
+        ${badgeNotaCredito(p.nota_credito_estado)}
+        ${badgePrioridad(p.prioridad)}
+        ${badgeEstado(p.estado)}
+      </div>
+    </div>`).join("");
+  count.textContent = `${pedidos.length} solicitud${pedidos.length !== 1 ? "es" : ""}`;
+}
+
+// ---------- DETALLE ----------
+
+async function abrirDetalle(id) {
+  try {
+    detalleActual = await api(`/api/pedidos/${id}`);
+  } catch (e) { toast(e.message); return; }
+  renderDetalle();
+  show("vista-detalle");
+}
+
+function renderDetalle() {
+  const p = detalleActual;
+  const el = document.getElementById("vista-detalle");
+
+  const puedeCambiarPrioridad = ME.rol === "admin" || ME.id === p.creado_por;
+
+  el.innerHTML = `
+    <div class="detalle-header">
+      <button class="btn btn-sm" onclick="irLista()">← Volver</button>
+      <div class="breadcrumb">#${p.id} — ${esc(p.razon_social)}</div>
+      ${badgeNotaCredito(p.nota_credito_estado)}
+      ${badgePrioridad(p.prioridad)}
+      ${badgeEstado(p.estado)}
+    </div>
+
+    <div class="grid-2">
+      <div class="card seccion">
+        <h3>Datos del pedido</h3>
+        <div class="campo-row"><span>Número de cliente</span><span>${esc(p.nro_cliente)}</span></div>
+        <div class="campo-row"><span>Razón social</span><span>${esc(p.razon_social)}</span></div>
+        <div class="campo-row"><span>Modalidad de facturación</span><span>${p.modalidad_facturacion === "cargado" ? "Pedido ya cargado (GlobalBluePoint)" : "Facturación manual"}</span></div>
+        ${p.modalidad_pago ? `<div class="campo-row"><span>Modalidad de pago</span><span>${esc(p.modalidad_pago)}</span></div>` : ""}
+        ${p.monto ? `<div class="campo-row"><span>Monto</span><span>${esc(p.monto)}</span></div>` : ""}
+        ${p.comprobante_path ? `<div class="campo-row"><span>Comprobante</span><span><a href="/archivo/comprobantes/${encodeURIComponent(p.comprobante_path)}" target="_blank">Ver comprobante</a></span></div>` : ""}
+        ${p.factura_pdf_path ? `<div class="campo-row"><span>Factura</span><span><a href="/archivo/facturas/${encodeURIComponent(p.factura_pdf_path)}" target="_blank">Ver factura (PDF)</a></span></div>` : ""}
+        ${p.observaciones ? `<div class="campo-row"><span>Observaciones</span><span>${esc(p.observaciones)}</span></div>` : ""}
+      </div>
+
+      <div class="card seccion">
+        <h3>Estado y logística</h3>
+        <div class="campo-row"><span>Estado actual</span><span>${META.estado_label[p.estado]}</span></div>
+        ${p.envio !== null ? `<div class="campo-row"><span>Tipo</span><span>${p.envio ? "Con envío" : "Retiro en local"}</span></div>` : ""}
+        ${p.fecha_entrega_estimada ? `<div class="campo-row"><span>Fecha estimada de entrega</span><span>${esc(p.fecha_entrega_estimada)}</span></div>` : ""}
+        ${p.cobranza_nota ? `<div class="campo-row"><span>Cobranza registrada</span><span>${esc(p.cobranza_nota)}</span></div>` : ""}
+        <div class="campo-row"><span>Creado</span><span>${fechaCorta(p.created_at)}</span></div>
+      </div>
+    </div>
+
+    ${p.nota_credito_estado ? `
+    <div class="card seccion" style="margin-bottom:14px">
+      <h3>Nota de crédito</h3>
+      <div class="campo-row"><span>Estado</span><span>${META.nota_credito_label[p.nota_credito_estado] || p.nota_credito_estado}</span></div>
+      <div class="campo-row"><span>Motivo</span><span>${esc(p.nota_credito_motivo)}</span></div>
+      ${p.nota_credito_pdf_path ? `<div class="campo-row"><span>Documento</span><span><a href="/archivo/notas_credito/${encodeURIComponent(p.nota_credito_pdf_path)}" target="_blank">Ver nota de crédito (PDF)</a></span></div>` : ""}
+    </div>` : ""}
+
+    ${puedeCambiarPrioridad ? renderCambioPrioridad(p) : ""}
+    ${renderAccionContextual(p)}
+    ${renderAccionNotaCredito(p)}
+
+    <div class="card seccion">
+      <h3>Historial</h3>
+      <ul class="timeline">
+        ${p.eventos.map(ev => `
+          <li>
+            <div class="t-tipo">${esc(ev.tipo.replace(/_/g, " "))}</div>
+            ${ev.detalle ? `<div>${esc(ev.detalle)}</div>` : ""}
+            <div class="t-meta">${esc(ev.usuario_nombre || "—")} · ${fechaCorta(ev.created_at)}</div>
+          </li>`).join("")}
+      </ul>
+    </div>
+  `;
+}
+
+function renderCambioPrioridad(p) {
+  return `
+    <div class="accion-box">
+      <h3>Cambiar prioridad</h3>
+      <div class="field">
+        <label>Nueva prioridad</label>
+        <select id="nueva-prioridad">
+          ${META.prioridades.map(pr => `<option value="${pr}" ${pr === p.prioridad ? "selected" : ""}>${pr}</option>`).join("")}
+        </select>
+      </div>
+      <div class="field">
+        <label>Motivo del cambio (obligatorio)</label>
+        <textarea id="motivo-prioridad" rows="2" placeholder="Ej: el cliente necesita el equipo antes de..."></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="cambiarPrioridad(${p.id})">Guardar cambio de prioridad</button>
+    </div>`;
+}
+
+async function cambiarPrioridad(id) {
+  const prioridad = document.getElementById("nueva-prioridad").value;
+  const motivo = document.getElementById("motivo-prioridad").value.trim();
+  try {
+    await api(`/api/pedidos/${id}/prioridad`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prioridad, motivo }),
+    });
+    toast("Prioridad actualizada");
+    abrirDetalle(id);
+  } catch (e) { toast(e.message); }
+}
+
+function renderAccionContextual(p) {
+  if (ME.rol === "facturacion" && p.estado === "A_FACTURAR") {
+    return `
+      <div class="accion-box">
+        <h3>Emitir factura</h3>
+        <form id="form-facturar" onsubmit="return false">
+          ${p.modalidad_facturacion === "manual" ? `
+            <div class="field">
+              <label><input type="checkbox" id="pago_confirmado" style="width:auto;height:auto;display:inline;margin-right:6px">Confirmo que el pago fue verificado</label>
+            </div>` : ""}
+          <div class="field">
+            <label>Registrar cobranza (obligatorio)</label>
+            <textarea id="cobranza_nota" rows="2" placeholder="Ej: cobranza registrada en GlobalBluePoint, comprobante #..."></textarea>
+          </div>
+          <div class="field">
+            <label>PDF de la factura</label>
+            <input type="file" id="factura_pdf" accept="application/pdf">
+          </div>
+          <button class="btn btn-primary" onclick="emitirFactura(${p.id})">Emitir factura</button>
+        </form>
+      </div>`;
+  }
+
+  if (ME.rol === "ventas" && p.estado === "FACTURADO" && p.envio === null) {
+    return `
+      <div class="accion-box">
+        <h3>Definir envío o retiro</h3>
+        <div class="radio-group">
+          <div class="radio-opt" id="opt-envio" onclick="seleccionarEnvio(true)">📦 Con envío</div>
+          <div class="radio-opt" id="opt-retiro" onclick="seleccionarEnvio(false)">🏬 Retiro en local</div>
+        </div>
+        <div style="margin-top:12px">
+          <button class="btn btn-primary" id="btn-confirmar-envio" disabled onclick="confirmarEnvio(${p.id})">Confirmar</button>
+        </div>
+      </div>`;
+  }
+
+  if (ME.rol === "deposito" && p.estado === "EN_PREPARACION") {
+    return `
+      <div class="accion-box">
+        <h3>Preparación en depósito</h3>
+        <button class="btn btn-primary" onclick="prepararPedido(${p.id})">
+          ${p.envio ? "Embalar y derivar a Flex" : "Preparar y derivar a Mostrador"}
+        </button>
+      </div>`;
+  }
+
+  if (ME.rol === "flex" && p.estado === "EN_FLEX") {
+    return `
+      <div class="accion-box">
+        <h3>Planificar entrega</h3>
+        <div class="field">
+          <label>Fecha estimada de entrega</label>
+          <input type="date" id="fecha_entrega">
+        </div>
+        <button class="btn btn-primary" onclick="programarEntrega(${p.id})">Programar entrega</button>
+      </div>`;
+  }
+
+  if (ME.rol === "flex" && p.estado === "PROGRAMADO") {
+    return `
+      <div class="accion-box">
+        <h3>Entrega programada para ${esc(p.fecha_entrega_estimada)}</h3>
+        <button class="btn btn-primary" onclick="marcarEntregado(${p.id})">Marcar como entregado</button>
+      </div>`;
+  }
+
+  if (ME.rol === "mostrador" && p.estado === "LISTO_MOSTRADOR") {
+    return `
+      <div class="accion-box">
+        <h3>Listo para retirar</h3>
+        <button class="btn btn-primary" onclick="marcarRetirado(${p.id})">Marcar como retirado por el cliente</button>
+      </div>`;
+  }
+
+  return "";
+}
+
+function renderAccionNotaCredito(p) {
+  if (!p.factura_pdf_path) return "";
+
+  if (!p.nota_credito_estado) {
+    if (ME.rol === "ventas" || ME.rol === "admin") {
+      return `
+        <div class="accion-box">
+          <h3>¿El cliente ya no quiere esta factura?</h3>
+          <div class="field">
+            <label>Motivo (obligatorio)</label>
+            <textarea id="nc-motivo" rows="2" placeholder="Ej: el cliente devolvió el producto y ya no quiere la factura"></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="solicitarNotaCredito(${p.id})">Solicitar nota de crédito</button>
+        </div>`;
+    }
+    return "";
+  }
+
+  if (p.nota_credito_estado === "SOLICITADA") {
+    if (ME.rol === "facturacion" || ME.rol === "admin") {
+      return `
+        <div class="accion-box">
+          <h3>Emitir nota de crédito</h3>
+          <p style="margin:0 0 12px;font-size:13px;color:var(--texto-sec)">Motivo solicitado: ${esc(p.nota_credito_motivo)}</p>
+          <div class="field">
+            <label>PDF de la nota de crédito</label>
+            <input type="file" id="nc-pdf" accept="application/pdf">
+          </div>
+          <button class="btn btn-primary" onclick="emitirNotaCredito(${p.id})">Emitir nota de crédito</button>
+        </div>`;
+    }
+    return `
+      <div class="accion-box">
+        <h3>Nota de crédito solicitada</h3>
+        <p style="margin:0;font-size:13px;color:var(--texto-sec)">Esperando que Facturación la emita.</p>
+      </div>`;
+  }
+
+  return "";
+}
+
+async function solicitarNotaCredito(id) {
+  const motivo = document.getElementById("nc-motivo").value.trim();
+  if (!motivo) { toast("Indicá el motivo"); return; }
+  try {
+    await api(`/api/pedidos/${id}/nota_credito/solicitar`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ motivo }),
+    });
+    toast("Nota de crédito solicitada");
+    abrirDetalle(id);
+  } catch (e) { toast(e.message); }
+}
+
+async function emitirNotaCredito(id) {
+  const file = document.getElementById("nc-pdf").files[0];
+  if (!file) { toast("Adjuntá el PDF de la nota de crédito"); return; }
+  const fd = new FormData();
+  fd.append("nota_credito_pdf", file);
+  try {
+    await api(`/api/pedidos/${id}/nota_credito/emitir`, { method: "POST", body: fd });
+    toast("Nota de crédito emitida");
+    abrirDetalle(id);
+  } catch (e) { toast(e.message); }
+}
+
+let envioSeleccionado = null;
+function seleccionarEnvio(val) {
+  envioSeleccionado = val;
+  document.getElementById("opt-envio").classList.toggle("selected", val === true);
+  document.getElementById("opt-retiro").classList.toggle("selected", val === false);
+  document.getElementById("btn-confirmar-envio").disabled = false;
+}
+async function confirmarEnvio(id) {
+  try {
+    await api(`/api/pedidos/${id}/definir_envio`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ envio: envioSeleccionado }),
+    });
+    toast("Definido correctamente");
+    abrirDetalle(id);
+  } catch (e) { toast(e.message); }
+}
+
+async function emitirFactura(id) {
+  const fd = new FormData();
+  const pagoChk = document.getElementById("pago_confirmado");
+  fd.append("pago_confirmado", pagoChk && pagoChk.checked ? "true" : "false");
+  fd.append("cobranza_nota", document.getElementById("cobranza_nota").value.trim());
+  const file = document.getElementById("factura_pdf").files[0];
+  if (file) fd.append("factura_pdf", file);
+  try {
+    await api(`/api/pedidos/${id}/emitir_factura`, { method: "POST", body: fd });
+    toast("Factura emitida");
+    abrirDetalle(id);
+  } catch (e) { toast(e.message); }
+}
+
+async function prepararPedido(id) {
+  try {
+    await api(`/api/pedidos/${id}/preparar`, { method: "POST" });
+    toast("Actualizado");
+    abrirDetalle(id);
+  } catch (e) { toast(e.message); }
+}
+
+async function programarEntrega(id) {
+  const fecha = document.getElementById("fecha_entrega").value;
+  if (!fecha) { toast("Elegí una fecha"); return; }
+  try {
+    await api(`/api/pedidos/${id}/programar`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fecha_entrega_estimada: fecha }),
+    });
+    toast("Entrega programada");
+    abrirDetalle(id);
+  } catch (e) { toast(e.message); }
+}
+
+async function marcarEntregado(id) {
+  try {
+    await api(`/api/pedidos/${id}/entregar`, { method: "POST" });
+    toast("Marcado como entregado");
+    abrirDetalle(id);
+  } catch (e) { toast(e.message); }
+}
+
+async function marcarRetirado(id) {
+  try {
+    await api(`/api/pedidos/${id}/retirar`, { method: "POST" });
+    toast("Marcado como retirado");
+    abrirDetalle(id);
+  } catch (e) { toast(e.message); }
+}
+
+// ---------- NUEVO PEDIDO ----------
+
+function abrirForm() {
+  const el = document.getElementById("vista-form");
+  el.innerHTML = `
+    <div class="detalle-header">
+      <button class="btn btn-sm" onclick="irLista()">← Volver</button>
+      <div class="breadcrumb">Nueva solicitud de facturación</div>
+    </div>
+    <div class="card seccion" style="max-width:640px">
+      <div class="field">
+        <label>Número de cliente</label>
+        <input type="text" id="nf-nro_cliente">
+      </div>
+      <div class="field">
+        <label>Razón social</label>
+        <input type="text" id="nf-razon_social">
+      </div>
+
+      <div class="field">
+        <label>Modalidad de facturación</label>
+        <div class="radio-group">
+          <div class="radio-opt selected" id="nf-opt-cargado" onclick="setModalidad('cargado')">Pedido ya cargado</div>
+          <div class="radio-opt" id="nf-opt-manual" onclick="setModalidad('manual')">Facturación manual</div>
+        </div>
+      </div>
+
+      <div id="nf-campos-manual" style="display:none">
+        <div class="field">
+          <label>Modalidad de pago</label>
+          <select id="nf-modalidad_pago">
+            <option value="">Seleccionar…</option>
+            ${META.modalidades_pago.map(m => `<option value="${m}">${m}</option>`).join("")}
+          </select>
+        </div>
+        <div class="field">
+          <label>Comprobante de pago (imagen o PDF)</label>
+          <input type="file" id="nf-comprobante" accept="application/pdf,image/*">
+        </div>
+        <div class="field">
+          <label>Monto (opcional)</label>
+          <input type="text" id="nf-monto">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Observaciones (opcional)</label>
+        <textarea id="nf-observaciones" rows="2"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Prioridad de la solicitud</label>
+        <select id="nf-prioridad" onchange="actualizarConfirmacionPrioridad()">
+          <option value="Normal" selected>Normal</option>
+          <option value="Baja">Baja</option>
+          <option value="Alta">Alta</option>
+          <option value="Urgente">Urgente</option>
+        </select>
+      </div>
+      <div class="field">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:400">
+          <input type="checkbox" id="nf-prioridad-confirmada" style="width:auto;height:auto" onchange="validarBotonEnviar()">
+          <span id="nf-confirmacion-texto">Confirmo que la prioridad de esta solicitud es: <b>Normal</b></span>
+        </label>
+      </div>
+
+      <button class="btn btn-primary" id="nf-btn-enviar" disabled onclick="enviarNuevoPedido()">Crear solicitud</button>
+    </div>
+  `;
+  modalidadSeleccionada = "cargado";
+  show("vista-form");
+}
+
+let modalidadSeleccionada = "cargado";
+function setModalidad(m) {
+  modalidadSeleccionada = m;
+  document.getElementById("nf-opt-cargado").classList.toggle("selected", m === "cargado");
+  document.getElementById("nf-opt-manual").classList.toggle("selected", m === "manual");
+  document.getElementById("nf-campos-manual").style.display = m === "manual" ? "" : "none";
+}
+function actualizarConfirmacionPrioridad() {
+  const val = document.getElementById("nf-prioridad").value;
+  document.getElementById("nf-confirmacion-texto").innerHTML = `Confirmo que la prioridad de esta solicitud es: <b>${val}</b>`;
+  document.getElementById("nf-prioridad-confirmada").checked = false;
+  validarBotonEnviar();
+}
+function validarBotonEnviar() {
+  document.getElementById("nf-btn-enviar").disabled = !document.getElementById("nf-prioridad-confirmada").checked;
+}
+
+async function enviarNuevoPedido() {
+  const fd = new FormData();
+  fd.append("nro_cliente", document.getElementById("nf-nro_cliente").value.trim());
+  fd.append("razon_social", document.getElementById("nf-razon_social").value.trim());
+  fd.append("modalidad_facturacion", modalidadSeleccionada);
+  fd.append("observaciones", document.getElementById("nf-observaciones").value.trim());
+  fd.append("prioridad", document.getElementById("nf-prioridad").value);
+  fd.append("prioridad_confirmada", document.getElementById("nf-prioridad-confirmada").checked ? "true" : "false");
+
+  if (modalidadSeleccionada !== "cargado") {
+    fd.append("modalidad_pago", document.getElementById("nf-modalidad_pago").value);
+    fd.append("monto", document.getElementById("nf-monto").value.trim());
+    const file = document.getElementById("nf-comprobante").files[0];
+    if (file) fd.append("comprobante", file);
+  }
+
+  try {
+    const nuevo = await api("/api/pedidos", { method: "POST", body: fd });
+    toast("Solicitud creada");
+    abrirDetalle(nuevo.id);
+  } catch (e) { toast(e.message); }
+}
+
+// ---------- USUARIOS (admin) ----------
+
+async function abrirUsuarios() {
+  const usuarios = await api("/api/usuarios");
+  renderUsuarios(usuarios);
+  show("vista-usuarios");
+}
+
+function renderUsuarios(usuarios) {
+  const el = document.getElementById("vista-usuarios");
+  el.innerHTML = `
+    <div class="detalle-header">
+      <button class="btn btn-sm" onclick="irLista()">← Volver</button>
+      <div class="breadcrumb">Gestión de usuarios</div>
+    </div>
+
+    <div class="card seccion" style="margin-bottom:16px">
+      <h3>Nuevo usuario</h3>
+      <div class="grid-2" style="margin-bottom:0">
+        <div class="field"><label>Nombre</label><input id="nu-nombre"></div>
+        <div class="field"><label>Usuario (login)</label><input id="nu-usuario"></div>
+        <div class="field"><label>Contraseña</label><input type="password" id="nu-password"></div>
+        <div class="field"><label>Rol</label>
+          <select id="nu-rol">${META.roles.map(r => `<option value="${r}">${META.rol_label[r]}</option>`).join("")}</select>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="crearUsuario()">Crear usuario</button>
+    </div>
+
+    <div class="card seccion">
+      <h3>Usuarios existentes</h3>
+      <div style="overflow-x:auto">
+      <table class="usr">
+        <thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Activo</th><th></th></tr></thead>
+        <tbody>
+          ${usuarios.map(u => `
+            <tr>
+              <td>${esc(u.nombre)}</td>
+              <td>${esc(u.usuario)}</td>
+              <td>
+                <select onchange="cambiarRolUsuario(${u.id}, this.value)">
+                  ${META.roles.map(r => `<option value="${r}" ${r === u.rol ? "selected" : ""}>${META.rol_label[r]}</option>`).join("")}
+                </select>
+              </td>
+              <td>${u.activo ? "Sí" : "No"}</td>
+              <td><button class="btn btn-sm" onclick="toggleActivoUsuario(${u.id}, ${u.activo ? 0 : 1})">${u.activo ? "Desactivar" : "Activar"}</button></td>
+            </tr>`).join("")}
+        </tbody>
+      </table>
+      </div>
+    </div>
+  `;
+}
+
+async function crearUsuario() {
+  try {
+    await api("/api/usuarios", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nombre: document.getElementById("nu-nombre").value.trim(),
+        usuario: document.getElementById("nu-usuario").value.trim(),
+        password: document.getElementById("nu-password").value,
+        rol: document.getElementById("nu-rol").value,
+      }),
+    });
+    toast("Usuario creado");
+    abrirUsuarios();
+  } catch (e) { toast(e.message); }
+}
+async function cambiarRolUsuario(id, rol) {
+  try {
+    await api(`/api/usuarios/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rol }) });
+    toast("Rol actualizado");
+  } catch (e) { toast(e.message); }
+}
+async function toggleActivoUsuario(id, activo) {
+  try {
+    await api(`/api/usuarios/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ activo: !!activo }) });
+    toast("Actualizado");
+    abrirUsuarios();
+  } catch (e) { toast(e.message); }
+}
+
+// ---------- METRICAS (admin) ----------
+
+async function abrirMetricas() {
+  const desdeEl = document.getElementById("met-desde");
+  const hastaEl = document.getElementById("met-hasta");
+  const params = new URLSearchParams({
+    desde: desdeEl ? desdeEl.value : "",
+    hasta: hastaEl ? hastaEl.value : "",
+  });
+  try {
+    const data = await api("/api/metricas/vendedores?" + params.toString());
+    renderMetricas(data);
+    show("vista-metricas");
+  } catch (e) { toast(e.message); }
+}
+
+function renderMetricas(data) {
+  const el = document.getElementById("vista-metricas");
+  const filas = data.vendedores;
+  el.innerHTML = `
+    <div class="detalle-header">
+      <button class="btn btn-sm" onclick="irLista()">← Volver</button>
+      <div class="breadcrumb">Métricas por vendedor</div>
+    </div>
+    <div class="toolbar">
+      <div class="field" style="margin-bottom:0"><label>Desde</label><input type="date" id="met-desde" value="${data.desde || ""}"></div>
+      <div class="field" style="margin-bottom:0"><label>Hasta</label><input type="date" id="met-hasta" value="${data.hasta || ""}"></div>
+      <button class="btn btn-primary" onclick="abrirMetricas()">Filtrar</button>
+    </div>
+    <div class="card seccion">
+      ${!filas.length ? `<div class="empty">No hay solicitudes de vendedores en este período.</div>` : `
+      <div style="overflow-x:auto">
+      <table class="usr">
+        <thead><tr>
+          <th>Vendedor</th><th>Solicitudes</th><th>Facturadas</th><th>Cerradas</th>
+          <th>Notas de crédito</th><th>Por prioridad</th><th>Monto registrado</th>
+        </tr></thead>
+        <tbody>
+          ${filas.map(v => `
+            <tr>
+              <td>${esc(v.vendedor_nombre)}${!v.vendedor_activo ? ' <span class="chip">inactivo</span>' : ""}</td>
+              <td>${v.total_solicitudes}</td>
+              <td>${v.facturadas}</td>
+              <td>${v.cerradas}</td>
+              <td>${v.con_nota_credito}</td>
+              <td>${META.prioridades.map(pr => `<span class="chip">${pr}: ${v.por_prioridad[pr] || 0}</span>`).join(" ")}</td>
+              <td>${v.monto_cantidad_registros ? `$${v.monto_total_registrado.toLocaleString("es-AR")} <span style="color:var(--texto-muted);font-size:11px">(${v.monto_cantidad_registros} con monto)</span>` : "—"}</td>
+            </tr>`).join("")}
+        </tbody>
+      </table>
+      </div>`}
+    </div>
+    <p style="color:var(--texto-muted);font-size:12px;margin-top:10px">
+      "Monto registrado" solo cuenta las solicitudes de facturación manual: las de "pedido ya cargado" no capturan un monto en este sistema.
+    </p>
+  `;
+}
+
+init();
+</script>
+</body>
+</html>
